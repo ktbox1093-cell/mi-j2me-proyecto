@@ -3,10 +3,9 @@ package com.tuproyecto;
 import javax.microedition.lcdui.Graphics;
 
 public class WorldMap {
-    // Tamaño de cada bloque (tile) en píxeles
     public static final int TILE_SIZE = 32;
     
-    // Matriz del mapa de ejemplo (0 = Suelo, 1 = Muro/Obstáculo)
+    // Matriz del mundo abierto (0 = Pasto transitable, 1 = Muro sólido)
     private int[][] mapData = {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
         {1, 0, 0, 0, 1, 0, 0, 0, 0, 1},
@@ -14,6 +13,8 @@ public class WorldMap {
         {1, 0, 1, 0, 0, 0, 0, 1, 0, 1},
         {1, 0, 1, 1, 1, 1, 0, 1, 0, 1},
         {1, 0, 0, 0, 0, 1, 0, 0, 0, 1},
+        {1, 0, 1, 1, 0, 0, 0, 1, 0, 1},
+        {1, 0, 0, 1, 1, 1, 0, 1, 0, 1},
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     };
 
@@ -25,13 +26,21 @@ public class WorldMap {
         return mapData.length;
     }
 
-    // Método para verificar colisiones antes de mover al jugador
+    public int getWorldWidth() {
+        return getCols() * TILE_SIZE;
+    }
+
+    public int getWorldHeight() {
+        return getRows() * TILE_SIZE;
+    }
+
+    // Verificación de colisiones por píxel contra bloques sólidos
     public boolean isSolid(int pixelX, int pixelY) {
         int tileX = pixelX / TILE_SIZE;
         int tileY = pixelY / TILE_SIZE;
         
         if (tileX < 0 || tileX >= getCols() || tileY < 0 || tileY >= getRows()) {
-            return true; // Fuera del mapa es sólido
+            return true;
         }
         return mapData[tileY][tileX] == 1;
     }
@@ -52,14 +61,14 @@ public class WorldMap {
                 int drawY = (row * TILE_SIZE) - cameraY;
 
                 if (mapData[row][col] == 1) {
-                    // Dibujar Muro
-                    g.setColor(105, 105, 105); // Gris piedra
+                    // Dibujar Muro / Obstáculo
+                    g.setColor(105, 105, 105);
                     g.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                     g.setColor(60, 60, 60);
                     g.drawRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                 } else {
-                    // Dibujar Suelo
-                    g.setColor(50, 205, 50); // Pasto brillante
+                    // Dibujar Terreno / Pasto
+                    g.setColor(50, 205, 50);
                     g.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                     g.setColor(34, 139, 34);
                     g.drawRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
@@ -68,4 +77,3 @@ public class WorldMap {
         }
     }
 }
-
