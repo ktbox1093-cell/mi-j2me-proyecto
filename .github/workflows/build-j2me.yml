@@ -20,22 +20,9 @@ jobs:
         distribution: 'temurin'
         java-version: '8'
 
-    - name: Crear directorios y descargar preverify de respaldo
-      run: |
-        echo "Creando estructura de directorios para WTK..."
-        mkdir -p wtk/bin
-        
-        # Descarga directa del binario preverify compatible con Linux desde un mirror estable
-        curl -sL https://github.com/hex007/j2me-wtk-bin/raw/master/bin/preverify -o wtk/bin/preverify
-        
-        # Dar permisos de ejecución
-        chmod +x wtk/bin/preverify
-        ls -la wtk/bin/
-
     - name: Crear directorios de compilación
       run: |
         mkdir -p build/classes
-        mkdir -p build/preverified
         mkdir -p dist
 
     - name: Compilar código fuente (Java 1.3)
@@ -46,22 +33,15 @@ jobs:
               -d build/classes \
               $(find src -name "*.java")
 
-    - name: Preverificar bytecode (Preverify)
-      run: |
-        echo "Ejecutando preverify local..."
-        wtk/bin/preverify \
-          -classpath lib/cldcapi11-2.0.4.jar:lib/midp-2.0.4.jar \
-          -d build/preverified \
-          build/classes
-
     - name: Empaquetar JAR y generar JAD
       run: |
-        echo "Empaquetando JAR..."
+        echo "Empaquetando JAR directamente desde clases..."
         if [ -d "res" ]; then
-          cp -r res/* build/preverified/
+          cp -r res/* build/classes/
         fi
         
-        jar cfm dist/MiJuego.jar MANIFEST.MF -C build/preverified .
+        # Creamos el archivo JAR utilizando MANIFEST.MF y las clases compiladas
+        jar cfm dist/MiJuego.jar MANIFEST.MF -C build/classes .
         
         JAR_SIZE=$(wc -c < dist/MiJuego.jar)
         
