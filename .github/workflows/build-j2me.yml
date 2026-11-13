@@ -25,13 +25,15 @@ jobs:
         echo "Descargando herramientas necesarias..."
         mkdir -p wtk/lib wtk/bin
         
-        # Descarga directa mediante enlaces crudos (sin git clone para evitar errores de credenciales)
-        curl -L -o wtk/lib/cldcapi11.jar https://raw.githubusercontent.com/hex007/j2me-wtk-bin/master/lib/cldcapi11.jar
-        curl -L -o wtk/lib/midp20.jar https://raw.githubusercontent.com/hex007/j2me-wtk-bin/master/lib/midp20.jar
-        curl -L -o wtk/bin/preverify https://raw.githubusercontent.com/hex007/j2me-wtk-bin/master/bin/preverify
+        # Descarga directa y silenciosa siguiendo redirecciones (-sL)
+        curl -sL https://raw.githubusercontent.com/hex007/j2me-wtk-bin/master/lib/cldcapi11.jar -o wtk/lib/cldcapi11.jar
+        curl -sL https://raw.githubusercontent.com/hex007/j2me-wtk-bin/master/lib/midp20.jar -o wtk/lib/midp20.jar
+        curl -sL https://raw.githubusercontent.com/hex007/j2me-wtk-bin/master/bin/preverify -o wtk/bin/preverify
         
         chmod +x wtk/bin/preverify
-        echo "¡Herramientas WTK configuradas correctamente!"
+        
+        echo "Verificando tamaño e integridad de los archivos descargados:"
+        ls -lh wtk/lib/ wtk/bin/
 
     - name: Crear directorios de compilación
       run: |
