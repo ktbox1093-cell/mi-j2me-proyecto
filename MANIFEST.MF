@@ -1,1 +1,6 @@
-
+MIDlet-Name: MiJuegoJ2ME
+MIDlet-Version: 1.0.0
+MIDlet-Vendor: Desarrollador
+MIDlet-1: MiJuego, /icono.png, com.tuproyecto.MainMIDlet
+MicroEdition-Profile: MIDP-2.0
+MicroEdition-Configuration: CLDC-1.1
