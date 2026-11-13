@@ -10,8 +10,8 @@ public class GameCanvas extends Canvas implements Runnable {
     
     private WorldMap worldMap;
     
-    // Posición del jugador en coordenadas del mundo
-    private int playerX = 64;
+    // Posición del jugador inicializada en una zona de pasto 100% libre
+    private int playerX = 96;
     private int playerY = 64;
     private int playerSize = 16;
     private int speed = 3;
@@ -63,13 +63,9 @@ public class GameCanvas extends Canvas implements Runnable {
         if (pressLeft) nextX -= speed;
         if (pressRight) nextX += speed;
 
-        // Comprobación de colisiones en las 4 esquinas del cuadrado del jugador
-        boolean collision = worldMap.isSolid(nextX, nextY) ||
-                            worldMap.isSolid(nextX + playerSize - 1, nextY) ||
-                            worldMap.isSolid(nextX, nextY + playerSize - 1) ||
-                            worldMap.isSolid(nextX + playerSize - 1, nextY + playerSize - 1);
-
-        if (!collision) {
+        // Verificación de colisiones holgada para evitar bloqueos
+        if (!worldMap.isSolid(nextX + 2, nextY + 2) && 
+            !worldMap.isSolid(nextX + playerSize - 2, nextY + playerSize - 2)) {
             playerX = nextX;
             playerY = nextY;
         }
@@ -79,11 +75,11 @@ public class GameCanvas extends Canvas implements Runnable {
         int screenWidth = getWidth();
         int screenHeight = getHeight();
         
-        // Calcular la cámara para que siga al jugador centrado en pantalla
+        // Calcular la cámara para seguir al jugador centrado en pantalla
         int cameraX = playerX - (screenWidth / 2) + (playerSize / 2);
         int cameraY = playerY - (screenHeight / 2) + (playerSize / 2);
 
-        // Limites de la cámara para que no salga del mapa
+        // Límites de la cámara para que no salga del mapa
         if (cameraX < 0) cameraX = 0;
         if (cameraY < 0) cameraY = 0;
         if (cameraX > worldMap.getWorldWidth() - screenWidth) {
@@ -93,19 +89,19 @@ public class GameCanvas extends Canvas implements Runnable {
             cameraY = worldMap.getWorldHeight() - screenHeight;
         }
 
-        // 1. Dibujar el mundo y los obstáculos con la cámara aplicada
+        // 1. Dibujar el mundo y obstáculos con la cámara aplicada
         worldMap.draw(g, cameraX, cameraY, screenWidth, screenHeight);
 
         // 2. Dibujar al jugador ajustado a la posición de la cámara
         int drawPlayerX = playerX - cameraX;
         int drawPlayerY = playerY - cameraY;
 
-        g.setColor(255, 215, 0); // Cuadrado amarillo del personaje
+        g.setColor(255, 215, 0); // Personaje amarillo
         g.fillRect(drawPlayerX, drawPlayerY, playerSize, playerSize);
         g.setColor(0, 0, 0);
         g.drawRect(drawPlayerX, drawPlayerY, playerSize, playerSize);
 
-        // 3. HUD Superior FIJO (no se desplaza con la cámara)
+        // 3. HUD Superior FIJO
         g.setColor(0, 0, 0);
         g.fillRect(0, 0, screenWidth, 18);
         g.setColor(255, 255, 255);
@@ -114,17 +110,20 @@ public class GameCanvas extends Canvas implements Runnable {
 
     protected void keyPressed(int keyCode) {
         int action = getGameAction(keyCode);
-        if (action == UP || keyCode == KEY_NUM2) pressUp = true;
-        if (action == DOWN || keyCode == KEY_NUM8) pressDown = true;
-        if (action == LEFT || keyCode == KEY_NUM4) pressLeft = true;
-        if (action == RIGHT || keyCode == KEY_NUM6) pressRight = true;
+        
+        // Soporte amplio para D-pad, teclado numérico y códigos especiales de Symbian
+        if (action == UP || keyCode == KEY_NUM2 || keyCode == -1) pressUp = true;
+        if (action == DOWN || keyCode == KEY_NUM8 || keyCode == -2) pressDown = true;
+        if (action == LEFT || keyCode == KEY_NUM4 || keyCode == -3) pressLeft = true;
+        if (action == RIGHT || keyCode == KEY_NUM6 || keyCode == -4) pressRight = true;
     }
 
     protected void keyReleased(int keyCode) {
         int action = getGameAction(keyCode);
-        if (action == UP || keyCode == KEY_NUM2) pressUp = false;
-        if (action == DOWN || keyCode == KEY_NUM8) pressDown = false;
-        if (action == LEFT || keyCode == KEY_NUM4) pressLeft = false;
-        if (action == RIGHT || keyCode == KEY_NUM6) pressRight = false;
+        
+        if (action == UP || keyCode == KEY_NUM2 || keyCode == -1) pressUp = false;
+        if (action == DOWN || keyCode == KEY_NUM8 || keyCode == -2) pressDown = false;
+        if (action == LEFT || keyCode == KEY_NUM4 || keyCode == -3) pressLeft = false;
+        if (action == RIGHT || keyCode == KEY_NUM6 || keyCode == -4) pressRight = false;
     }
 }
