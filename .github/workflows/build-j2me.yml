@@ -1,1 +1,91 @@
+name: Build J2ME App
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Copiar repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Java (JDK 8 para compilar con target antiguo)
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '8'
+
+    - name: Descargar y preparar Sun WTK (Preverify y Librerías CLDC/MIDP)
+      run: |
+        echo "Descargando Sun WTK 2.5.2..."
+        # Descargamos una versión empaquetada de las herramientas de WTK para Linux
+        mkdir -p wtk/lib wtk/bin
+        
+        # Obtenemos las librerías base (cldcapi11.jar y midp20.jar) y el binario preverify
+        # Usamos un repositorio espejo público que contiene las ferramentas de WTK extraídas
+        git clone --depth 1 https://github.com/hex007/j2me-wtk-bin.git temp_wtk
+        cp temp_wtk/lib/cldcapi11.jar wtk/lib/
+        cp temp_wtk/lib/midp20.jar wtk/lib/
+        cp temp_wtk/bin/preverify wtk/bin/
+        chmod +x wtk/bin/preverify
+        rm -rf temp_wtk
+        
+        echo "Herramientas WTK configuradas correctamente."
+
+    - name: Crear directorios de compilación
+      run: |
+        mkdir -p build/classes
+        mkdir -p build/preverified
+        mkdir -p dist
+
+    - name: Compilar código fuente (Java 1.3)
+      run: |
+        echo "Compilando clases con javac -source 1.3 -target 1.3..."
+        javac -source 1.3 -target 1.3 \
+              -bootclasspath wtk/lib/cldcapi11.jar:wtk/lib/midp20.jar \
+              -d build/classes \
+              $(find src -name "*.java")
+
+    - name: Preverificar bytecode (Preverify)
+      run: |
+        echo "Ejecutando preverify..."
+        wtk/bin/preverify \
+          -classpath wtk/lib/cldcapi11.jar:wtk/lib/midp20.jar \
+          -d build/preverified \
+          build/classes
+
+    - name: Empaquetar JAR y generar JAD
+      run: |
+        echo "Empaquetando JAR..."
+        # Copiamos recursos si existen en res/
+        if [ -d "res" ]; then
+          cp -r res/* build/preverified/
+        fi
+        
+        # Creamos el archivo JAR usando el MANIFEST.MF
+        jar cfm dist/MiJuego.jar MANIFEST.MF -C build/preverified .
+        
+        # Generamos el archivo JAD básico
+        JAR_SIZE=$(wc -c < dist/MiJuego.jar)
+        JAR_NAME="MiJuego.jar"
+        
+        echo "MIDlet-Name: MiJuegoJ2ME" > dist/MiJuego.jad
+        echo "MIDlet-Version: 1.0.0" >> dist/MiJuego.jad
+        echo "MIDlet-Vendor: Desarrollador" >> dist/MiJuego.jad
+        echo "MIDlet-Jar-URL: $JAR_NAME" >> dist/MiJuego.jad
+        echo "MIDlet-Jar-Size: $JAR_SIZE" >> dist/MiJuego.jad
+        echo "MicroEdition-Profile: MIDP-2.0" >> dist/MicroEdition-Configuration: CLDC-1.1" >> dist/MiJuego.jad 2>/dev/null || echo "MicroEdition-Configuration: CLDC-1.1" >> dist/MiJuego.jad
+
+        echo "¡Empaquetado completado con éxito!"
+
+    - name: Subir artefactos (.jar y .jad)
+      uses: actions/upload-artifact@v4
+      with:
+        name: j2me-app-binarios
+        path: dist/
 
