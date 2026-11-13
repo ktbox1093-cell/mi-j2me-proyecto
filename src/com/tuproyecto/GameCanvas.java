@@ -2,36 +2,26 @@ package com.tuproyecto;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
-import java.io.IOException;
 
 public class GameCanvas extends Canvas implements Runnable {
     private MainMIDlet midlet;
     private boolean running;
     private Thread gameThread;
     
-    // Coordenadas del personaje
-    private int x = 120;
-    private int y = 100;
-    private int speed = 4;
+    private WorldMap worldMap;
     
-    // Imagen del personaje (Sprite)
-    private Image playerImg;
-    private boolean imgLoaded = false;
+    // Posición del jugador en coordenadas del mundo
+    private int playerX = 64;
+    private int playerY = 64;
+    private int playerSize = 16;
+    private int speed = 3;
     
     // Estados de las teclas
     private boolean pressUp, pressDown, pressLeft, pressRight;
 
     public GameCanvas(MainMIDlet midlet) {
         this.midlet = midlet;
-        
-        // Carga de recursos (Asegúrate de colocar tu imagen player.png en la carpeta res/)
-        try {
-            playerImg = Image.createImage("/player.png");
-            imgLoaded = true;
-        } catch (IOException e) {
-            imgLoaded = false; // Si falla, usaremos el rectángulo de respaldo por seguridad
-        }
+        this.worldMap = new WorldMap();
     }
 
     public void startThread() {
@@ -65,45 +55,61 @@ public class GameCanvas extends Canvas implements Runnable {
     }
 
     private void updateGame() {
-        if (pressUp) y -= speed;
-        if (pressDown) y += speed;
-        if (pressLeft) x -= speed;
-        if (pressRight) x += speed;
-        
-        // Límites de pantalla (Resolución típica S60: 320x240)
-        int width = getWidth();
-        int height = getHeight();
-        
-        if (x < 0) x = 0;
-        if (x > width - 20) x = width - 20;
-        if (y < 20) y = 20;
-        if (y > height - 20) y = height - 20;
+        int nextX = playerX;
+        int nextY = playerY;
+
+        if (pressUp) nextY -= speed;
+        if (pressDown) nextY += speed;
+        if (pressLeft) nextX -= speed;
+        if (pressRight) nextX += speed;
+
+        // Comprobación de colisiones en las 4 esquinas del cuadrado del jugador
+        boolean collision = worldMap.isSolid(nextX, nextY) ||
+                            worldMap.isSolid(nextX + playerSize - 1, nextY) ||
+                            worldMap.isSolid(nextX, nextY + playerSize - 1) ||
+                            worldMap.isSolid(nextX + playerSize - 1, nextY + playerSize - 1);
+
+        if (!collision) {
+            playerX = nextX;
+            playerY = nextY;
+        }
     }
 
     protected void paint(Graphics g) {
-        int width = getWidth();
-        int height = getHeight();
+        int screenWidth = getWidth();
+        int screenHeight = getHeight();
         
-        // Fondo del escenario (Estilo pasto / mundo abierto)
-        g.setColor(34, 139, 34); // Verde bosque
-        g.fillRect(0, 0, width, height);
-        
-        // HUD Superior
-        g.setColor(0, 0, 0);
-        g.fillRect(0, 0, width, 20);
-        g.setColor(255, 255, 255);
-        g.drawString("RPG J2ME - X:" + x + " Y:" + y, 5, 2, Graphics.TOP | Graphics.LEFT);
-        
-        // Renderizado del Jugador (Sprite o respaldo gráfico)
-        if (imgLoaded && playerImg != null) {
-            g.drawImage(playerImg, x, y, Graphics.TOP | Graphics.LEFT);
-        } else {
-            // Respaldo por si no encuentra la imagen
-            g.setColor(255, 215, 0); // Dorado
-            g.fillRect(x, y, 16, 16);
-            g.setColor(0, 0, 0);
-            g.drawRect(x, y, 16, 16);
+        // Calcular la cámara para que siga al jugador centrado en pantalla
+        int cameraX = playerX - (screenWidth / 2) + (playerSize / 2);
+        int cameraY = playerY - (screenHeight / 2) + (playerSize / 2);
+
+        // Limites de la cámara para que no salga del mapa
+        if (cameraX < 0) cameraX = 0;
+        if (cameraY < 0) cameraY = 0;
+        if (cameraX > worldMap.getWorldWidth() - screenWidth) {
+            cameraX = worldMap.getWorldWidth() - screenWidth;
         }
+        if (cameraY > worldMap.getWorldHeight() - screenHeight) {
+            cameraY = worldMap.getWorldHeight() - screenHeight;
+        }
+
+        // 1. Dibujar el mundo y los obstáculos con la cámara aplicada
+        worldMap.draw(g, cameraX, cameraY, screenWidth, screenHeight);
+
+        // 2. Dibujar al jugador ajustado a la posición de la cámara
+        int drawPlayerX = playerX - cameraX;
+        int drawPlayerY = playerY - cameraY;
+
+        g.setColor(255, 215, 0); // Cuadrado amarillo del personaje
+        g.fillRect(drawPlayerX, drawPlayerY, playerSize, playerSize);
+        g.setColor(0, 0, 0);
+        g.drawRect(drawPlayerX, drawPlayerY, playerSize, playerSize);
+
+        // 3. HUD Superior FIJO (no se desplaza con la cámara)
+        g.setColor(0, 0, 0);
+        g.fillRect(0, 0, screenWidth, 18);
+        g.setColor(255, 255, 255);
+        g.drawString("RPG | X:" + playerX + " Y:" + playerY, 4, 1, Graphics.TOP | Graphics.LEFT);
     }
 
     protected void keyPressed(int keyCode) {
