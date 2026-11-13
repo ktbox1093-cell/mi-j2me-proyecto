@@ -20,13 +20,9 @@ jobs:
         distribution: 'temurin'
         java-version: '8'
 
-    - name: Descargar únicamente el binario preverify
+    - name: Dar permisos de ejecución a preverify local
       run: |
-        echo "Preparando directorios y preverify..."
-        mkdir -p wtk/bin
-        
-        # Descargamos únicamente el ejecutable preverify
-        curl -sL https://raw.githubusercontent.com/hex007/j2me-wtk-bin/master/bin/preverify -o wtk/bin/preverify
+        echo "Verificando permisos de preverify..."
         chmod +x wtk/bin/preverify
 
     - name: Crear directorios de compilación
@@ -45,7 +41,7 @@ jobs:
 
     - name: Preverificar bytecode (Preverify)
       run: |
-        echo "Ejecutando preverify..."
+        echo "Ejecutando preverify local..."
         wtk/bin/preverify \
           -classpath lib/cldcapi11-2.0.4.jar:lib/midp-2.0.4.jar \
           -d build/preverified \
